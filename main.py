@@ -1,4 +1,5 @@
 import os 
+import sys
 import datetime
 import discord
 from discord.ext import tasks
@@ -60,6 +61,8 @@ def initializeIntents():
   return intents 
 
 def getToken():
+  if sys.argv[1]:
+    return sys.argv[1]
   token = os.getenv('OVERSEERTOKEN', "UNDEFINED")
   if token == "UNDEFINED":
     print("Failed to retrieve the token. Exiting the application.")
