@@ -17,6 +17,9 @@ async def bumpcheck(overseer):
 
   latest_bump = None
   async for message in bump_channel.history(limit=200):
+    if message.author.id == 1240293764837277736:
+      return 
+
     interaction = message.interaction
     if not interaction:
       continue 
