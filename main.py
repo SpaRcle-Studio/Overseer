@@ -8,6 +8,7 @@ from discord.ext import tasks
 @tasks.loop(minutes = 30)
 async def bumpcheck(overseer):
   role_id = 1240350374544543818
+  remind_needed = True
   if not overseer:
     print("bumpcheck() : client object is not valid!")
     return
@@ -20,18 +21,18 @@ async def bumpcheck(overseer):
   latest_bump = None
   async for message in bump_channel.history(limit=200):
     if message.author.id == 1240293764837277736:
-      return 
+      remind_needed = False
 
     interaction = message.interaction
     if not interaction:
       continue 
         
-    if interaction.name == "bump" and message.author.id == 302050872383242240:
+    if interaction.name == "bump" and message.author.id == 302050872383242240 and remind_needed:
       latest_bump = message      
       break
     
   if not latest_bump: 
-    print("bumpcheck() : failed to retrieve latest bump message!")
+    print("bumpcheck() : failed to retrieve latest needed bump message!")
     return 
 
   now = datetime.datetime.now(datetime.timezone.utc)
