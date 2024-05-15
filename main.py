@@ -1,5 +1,6 @@
 import os 
 import sys
+import argparse
 import datetime
 import discord
 from discord.ext import tasks
@@ -61,14 +62,20 @@ def initializeIntents():
   return intents 
 
 def getToken():
-  if sys.argv[1]:
-    return sys.argv[1]
+  print("getToken() : trying to get token from command line arguments...")
+  parser = argparse.ArgumentParser("SpaRcle Overseer")
+  parser.add_argument("-token", help="Provide the token for the bot.", type=str, required=False, default="UNDEFINED")
+  args = parser.parse_args() 
+  if args.token != "UNDEFINED":
+    print("getToken() : token is successfully retrieved.")
+    return args.token
+  print("getToken() : trying to get token from environment variables...")
   token = os.getenv('OVERSEERTOKEN', "UNDEFINED")
   if token == "UNDEFINED":
-    print("Failed to retrieve the token. Exiting the application.")
+    print("getToken() : failed to retrieve the token. Exiting the application.")
     exit()  
   else:
-    print("Token is retrieved successfully.")
+    print("getToken() : token is retrieved successfully.")
     return token 
 
 if __name__ == "__main__":
