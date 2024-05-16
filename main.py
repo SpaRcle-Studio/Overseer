@@ -94,14 +94,14 @@ tree = app_commands.CommandTree(overseer)
 
 @tree.command(name="bumpstat", description="Tells you how many times you /bumped the server.", guild=discord.Object(id=768652124204433429))
 async def bumpstat(interaction):
-  connection = sqlite3.Connection("overseerBumps.db")
-  cursor = connection.cursor()
-  cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(message.author.id)}'")
-  row = cursor.fetchone()
-  if not row:
-    await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
-  else:
-    await interaction.response.send_message("You have /bump'ed the server '{row[3]}' times!")
+  with sqlite3.Connection("overseerBumps.db") as connection:
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(interaction.user.id)}'")
+    row = cursor.fetchone()
+    if not row:
+      await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
+    else:
+      await interaction.response.send_message("You have /bump'ed the server '{row[3]}' times!")
 
 @overseer.event
 async def on_ready():
