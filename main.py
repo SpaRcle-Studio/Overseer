@@ -10,6 +10,7 @@ from discord import app_commands
 @tasks.loop(minutes = 5)
 async def bumpcheck(overseer):
   role_id = 1240350374544543818
+  remind_message = f"Time to bump the server! :) ||<@&{role_id}>||"
   remind_needed = True
   if not overseer:
     print("bumpcheck() : client object is not valid!")
@@ -22,7 +23,7 @@ async def bumpcheck(overseer):
 
   latest_bump = None
   async for message in bump_channel.history(limit=200):
-    if message.author.id == 1240293764837277736:
+    if message.author.id == 1240293764837277736 and message.content == remind_message:
       remind_needed = False
 
     interaction = message.interaction
@@ -43,20 +44,21 @@ async def bumpcheck(overseer):
   
   print(f"bumpcheck() : successfully retrieved latest needed bump message. It was created at: '{message.created_at}'.")
   
-  connection = sqlite3.Connection("overseerBumps.db")
-  cursor = connection.cursor()
-  cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (id INTEGER PRIMARY KEY AUTOINCREMENT, userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
-  connection.commit()
-  cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(message.author.id)}'")
-  row = cursor.fetchone()
-  if not row:
-    cursor.execute(f"INSERT INTO BumpCount(userId, messageId, count) VALUES ({str(message.author.id)}, {str(message.id)}, 1)")
-  elif message.id != str(row[2]):
-    cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE id = {row[0]}")
-    cursor.execute(f"UPDATE BumpCount SET messageId = '{str(message.author.id)}' WHERE id = {row[0]}")
+  with sqlite3.Connection("overseerBumps.db") as connection:
+    cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (id INTEGER PRIMARY KEY AUTOINCREMENT, userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
+    connection.commit()
+    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(message.interaction.user.id)}'")
+    row = cursor.fetchone()
+    if not row:
+      print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
+      cursor.execute(f"INSERT INTO BumpCount(userId, messageId, count) VALUES ({str(message.interaction.user.id)}, {str(message.id)}, 1)")
+    elif message.id != str(row[2]):
+      print(f"bumpcheck() : the user '{row[1]}' is in DB with '{row[3]}' bumps.")
+      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE id = {row[0]}")
+      cursor.execute(f"UPDATE BumpCount SET messageId = '{str(message.interaction.user.id)}' WHERE id = {row[0]}")
 
-  connection.commit()
-  connection.close()
+    connection.commit()
 
   now = datetime.datetime.now(datetime.timezone.utc)
   difference = now - message.created_at
@@ -65,7 +67,7 @@ async def bumpcheck(overseer):
   print(f"bumpcheck() : the difference between current time and the latest bump is '{minutes}' minutes. Left till next remind: '{120-minutes}'")
   if minutes > 120:
     print("bumpcheck() : sending a remind message...")
-    await bump_channel.send(f"Time to bump the server! :) ||<@&{role_id}>||")
+    await bump_channel.send(remind_message)
 
 
 def getToken():
@@ -101,7 +103,7 @@ async def bumpstat(interaction):
     if not row:
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
-      await interaction.response.send_message("You have /bump'ed the server '{row[3]}' times!")
+      await interaction.response.send_message(f"You have /bump'ed the server '{row[3]}' times!")
 
 @overseer.event
 async def on_ready():
