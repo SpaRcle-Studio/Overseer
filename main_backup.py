@@ -56,7 +56,6 @@ async def bumpcheck(overseer):
     cursor.execute(f"UPDATE BumpCount SET messageId = '{str(message.author.id)}' WHERE id = {row[0]}")
 
   connection.commit()
-  connection.close()
 
   now = datetime.datetime.now(datetime.timezone.utc)
   difference = now - message.created_at
@@ -67,6 +66,34 @@ async def bumpcheck(overseer):
     print("bumpcheck() : sending a remind message...")
     await bump_channel.send(f"Time to bump the server! :) ||<@&{role_id}>||")
 
+class Overseer(discord.Client):
+  #async def setup(self):
+  #  self.tree = app_commands.CommandTree(self)
+  async def on_ready(self):
+    print(f'Logged in as {self.user} (ID: {self.user.id})')
+    print('------')
+   # await self.tree.sync(guild=discord.Object(768652124204433429))
+    #client.add_command(test)
+    bumpcheck.start(self)
+
+  @commands.command(name="test")
+  async def test(self, ctx):
+    await ctx.reply('idi nahuy!')
+
+  #@tree.command(name="bumpstat", description="Tells you how many times you /bumped the server.", guild=discord.Object(id=768652124204433429))
+  #async def bumpstat(interaction):
+  #  print("test")
+  #@client.command(name="test")
+  #async def test(self, ctx):
+  #  print(arg)
+
+def initializeIntents():
+  intents = discord.Intents.all()
+  intents.members = True
+  intents.typing = True
+  intents.presences = True
+  intents.message_content = True
+  return intents 
 
 def getToken():
   print("getToken() : trying to get token from command line arguments...")
@@ -85,30 +112,16 @@ def getToken():
     print("getToken() : token is retrieved successfully.")
     return token 
 
-print("Welcome to SpaRcle Overseer.")
-print("Trying to get the token from environment variables...")
-token = getToken()
-intents = discord.Intents.all()
-overseer = discord.Client(command_prefix="*", intents=intents)
-tree = app_commands.CommandTree(overseer)
+overseer = None
 
-@tree.command(name="bumpstat", description="Tells you how many times you /bumped the server.", guild=discord.Object(id=768652124204433429))
-async def bumpstat(interaction):
-  connection = sqlite3.Connection("overseerBumps.db")
-  cursor = connection.cursor()
-  cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(message.author.id)}'")
-  row = cursor.fetchone()
-  if not row:
-    await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
-  else:
-    await interaction.response.send_message("You have /bump'ed the server '{row[3]}' times!")
-
-@overseer.event
-async def on_ready():
-  print(f'Logged in as {overseer.user} (ID: {overseer.user.id})')
-  print('------')
-  await tree.sync(guild=discord.Object(id=768652124204433429))
-  bumpcheck.start(overseer)
-
-print("Connecting to Discord API...")
-overseer.run(token)
+if __name__ == "__main__":
+  print("Welcome to SpaRcle Overseer.")
+  print("Trying to get the token from environment variables...")
+  token = getToken()
+  intents = initializeIntents()
+  overseer = Overseer(command_prefix="*", intents=intents)
+  #overseer.setup()
+  print("Connecting to Discord API...")
+  overseer.run(token)
+else:
+  print("SpaRcle Overseer bot can only be ran directly.")
