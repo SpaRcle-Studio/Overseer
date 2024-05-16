@@ -27,19 +27,27 @@ async def bumpcheck(overseer):
     if not interaction:
       continue 
         
-    if interaction.name == "bump" and message.author.id == 302050872383242240 and remind_needed:
+    if not remind_needed:
+      print("bumpcheck() : remind is not needed, exiting the loop.")
+      break 
+
+    if interaction.name == "bump" and message.author.id == 302050872383242240:
       latest_bump = message      
       break
     
   if not latest_bump: 
     print("bumpcheck() : failed to retrieve latest needed bump message!")
     return 
+  
+  print(f"bumpcheck() : successfully retrieved latest needed bump message. It was created at: '{message.created_at}'.")
 
   now = datetime.datetime.now(datetime.timezone.utc)
   difference = now - message.created_at
   difference_in_s = difference.total_seconds()
-  hours = divmod(difference_in_s, 3600)[0]
-  if hours > 2:
+  minutes = divmod(difference_in_s , 60)[0]
+  print(f"bumpcheck() : the difference between current time and the latest bump is '{minutes}' minutes.")
+  if minutes > 120:
+    print("bumpcheck() : sending a remind message...")
     await bump_channel.send(f"Time to bump the server! :) ||<@&{role_id}>||")
 
 class Overseer(discord.Client):
