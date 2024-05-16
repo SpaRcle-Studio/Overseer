@@ -5,7 +5,7 @@ import datetime
 import discord
 from discord.ext import tasks
 
-@tasks.loop(minutes = 30)
+@tasks.loop(minutes = 5)
 async def bumpcheck(overseer):
   role_id = 1240350374544543818
   remind_needed = True
