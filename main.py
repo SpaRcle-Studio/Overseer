@@ -55,7 +55,7 @@ async def bumpcheck(overseer):
       sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?, ?)"
       data = (str(message.interaction.user.id), str(message.id), 1)
       cursor.execute(sql, data)
-    elif message.id != str(row[2]):
+    elif message.id != str(row[1]):
       print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[2]}' bumps.")
       cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = {row[0]}")
       cursor.execute(f"UPDATE BumpCount SET messageId = {str(message.interaction.user.id)} WHERE userId = {row[0]}")
