@@ -46,17 +46,19 @@ async def bumpcheck(overseer):
   
   with sqlite3.Connection("overseerBumps.db") as connection:
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (id INTEGER PRIMARY KEY AUTOINCREMENT, userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
     connection.commit()
-    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(message.interaction.user.id)}'")
+    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = {str(message.interaction.user.id)}")
     row = cursor.fetchone()
     if not row:
       print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
-      cursor.execute(f"INSERT INTO BumpCount(userId, messageId, count) VALUES ({str(message.interaction.user.id)}, {str(message.id)}, 1)")
+      sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?, ?)"
+      data = (str(message.interaction.user.id), str(message.id), 1)
+      cursor.execute(sql, data)
     elif message.id != str(row[2]):
-      print(f"bumpcheck() : the user '{row[1]}' is in DB with '{row[3]}' bumps.")
-      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE id = {row[0]}")
-      cursor.execute(f"UPDATE BumpCount SET messageId = '{str(message.interaction.user.id)}' WHERE id = {row[0]}")
+      print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[2]}' bumps.")
+      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = {row[0]}")
+      cursor.execute(f"UPDATE BumpCount SET messageId = {str(message.interaction.user.id)} WHERE userId = {row[0]}")
 
     connection.commit()
 
