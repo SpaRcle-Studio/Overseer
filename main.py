@@ -105,7 +105,7 @@ async def bumpstat(interaction):
     if not row:
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
-      await interaction.response.send_message(f"You have /bump'ed the server '{row[3]}' times!")
+      await interaction.response.send_message(f"You have /bump'ed the server '{row[2]}' times!")
 
 @overseer.event
 async def on_ready():
