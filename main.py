@@ -87,7 +87,7 @@ async def bumpstat(interaction):
 
 @overseer.event
 async def on_message(message):
-  if message.interaction.name == "bump" and message.author.id == '302050872383242240'
+  if message.interaction.name == "bump" and message.author.id == '302050872383242240':
     with sqlite3.Connection("overseerBumps.db") as connection:
       cursor = connection.cursor()
       cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
