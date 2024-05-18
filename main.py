@@ -39,24 +39,6 @@ async def bumpcheck(overseer):
     return 
   
   print(f"bumpcheck() : successfully retrieved latest needed bump message. It was created at: '{message.created_at}'.")
-  
-  with sqlite3.Connection("overseerBumps.db") as connection:
-    cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
-    connection.commit()
-    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{message.interaction.user.id}'")
-    row = cursor.fetchone()
-    if row is None:
-      print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
-      sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?, ?)"
-      data = (str(message.interaction.user.id), str(message.id), 1)
-      cursor.execute(sql, data)
-    elif str(message.id) != str(row[1]):
-      print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[2]}' bumps.")
-      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = '{row[0]}'")
-      cursor.execute(f"UPDATE BumpCount SET messageId = '{message.interaction.user.id}' WHERE userId = '{row[0]}'")
-
-    connection.commit()
 
   now = datetime.datetime.now(datetime.timezone.utc)
   difference = now - message.created_at
@@ -102,6 +84,27 @@ async def bumpstat(interaction):
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
       await interaction.response.send_message(f"```You have /bump'ed the server '{row[2]}' times!```")
+
+@overseer.event
+async def on_message(message):
+  if message.interaction.name == "bump" and message.author.id == '302050872383242240'
+    with sqlite3.Connection("overseerBumps.db") as connection:
+      cursor = connection.cursor()
+      cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
+      connection.commit()
+      cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{message.interaction.user.id}'")
+      row = cursor.fetchone()
+      if row is None:
+        print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
+        sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?)"
+        data = (str(message.interaction.user.id), 1)
+        cursor.execute(sql, data)
+      else:
+        print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[1]}' bumps.")
+        cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = '{row[0]}'")
+        cursor.execute(f"UPDATE BumpCount SET messageId = '{message.interaction.user.id}' WHERE userId = '{row[0]}'")
+
+    connection.commit()
 
 @overseer.event
 async def on_ready():
