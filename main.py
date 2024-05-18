@@ -11,7 +11,6 @@ from discord import app_commands
 async def bumpcheck(overseer):
   role_id = 1240350374544543818
   remind_message = f"Time to bump the server! :) ||<@&{role_id}>||"
-  remind_needed = True
   if not overseer:
     print("bumpcheck() : client object is not valid!")
     return
@@ -24,16 +23,13 @@ async def bumpcheck(overseer):
   latest_bump = None
   async for message in bump_channel.history(limit=200):
     if message.author.id == 1240293764837277736 and message.content == remind_message:
-      remind_needed = False
+      print("bumpcheck() : remind is not needed, exiting the loop.")
+      return
 
     interaction = message.interaction
     if not interaction:
       continue 
         
-    if not remind_needed:
-      print("bumpcheck() : remind is not needed, exiting the loop.")
-      return
-
     if interaction.name == "bump" and message.author.id == 302050872383242240:
       latest_bump = message      
       break
@@ -48,17 +44,17 @@ async def bumpcheck(overseer):
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, messageId TEXT UNIQUE, count INTEGER)")
     connection.commit()
-    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = {str(message.interaction.user.id)}")
+    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{message.interaction.user.id}'")
     row = cursor.fetchone()
-    if not row:
+    if row is None:
       print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
       sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?, ?)"
       data = (str(message.interaction.user.id), str(message.id), 1)
       cursor.execute(sql, data)
-    elif message.id != str(row[1]):
+    elif str(message.id) != str(row[1]):
       print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[2]}' bumps.")
-      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = {row[0]}")
-      cursor.execute(f"UPDATE BumpCount SET messageId = {str(message.interaction.user.id)} WHERE userId = {row[0]}")
+      cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = '{row[0]}'")
+      cursor.execute(f"UPDATE BumpCount SET messageId = '{message.interaction.user.id}' WHERE userId = '{row[0]}'")
 
     connection.commit()
 
@@ -100,12 +96,12 @@ tree = app_commands.CommandTree(overseer)
 async def bumpstat(interaction):
   with sqlite3.Connection("overseerBumps.db") as connection:
     cursor = connection.cursor()
-    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{str(interaction.user.id)}'")
+    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{interaction.user.id}'")
     row = cursor.fetchone()
-    if not row:
+    if row is None:
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
-      await interaction.response.send_message(f"You have /bump'ed the server '{row[2]}' times!")
+      await interaction.response.send_message(f"```You have /bump'ed the server '{row[2]}' times!```")
 
 @overseer.event
 async def on_ready():
