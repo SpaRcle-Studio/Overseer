@@ -80,6 +80,8 @@ async def bumpstat(interaction):
   db_path = os.path.join(BASE_DIR, "overseerBumps.db")
   with sqlite3.Connection(db_path) as connection:
     cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
+    connection.commit()
     cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{interaction.user.id}'")
     row = cursor.fetchone()
     if row is None:
