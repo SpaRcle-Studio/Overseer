@@ -76,14 +76,16 @@ tree = app_commands.CommandTree(overseer)
 
 @tree.command(name="bumpstat", description="Tells you how many times you /bumped the server.", guild=discord.Object(id=768652124204433429))
 async def bumpstat(interaction):
-  with sqlite3.Connection("overseerBumps.db") as connection:
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  db_path = os.path.join(BASE_DIR, "overseerBumps.db")
+  with sqlite3.Connection(db_path) as connection:
     cursor = connection.cursor()
     cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{interaction.user.id}'")
     row = cursor.fetchone()
     if row is None:
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
-      await interaction.response.send_message(f"```You have /bump'ed the server '{row[2]}' times!```")
+      await interaction.response.send_message(f"```You have /bump'ed the server '{row[1]}' times!```")
 
 @overseer.event
 async def on_message(message):
@@ -91,7 +93,9 @@ async def on_message(message):
     return
 
   if message.interaction.name == "bump" and message.author.id == '302050872383242240':
-    with sqlite3.Connection("overseerBumps.db") as connection:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(BASE_DIR, "overseerBumps.db")
+    with sqlite3.Connection(db_path) as connection:
       cursor = connection.cursor()
       cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
       connection.commit()
