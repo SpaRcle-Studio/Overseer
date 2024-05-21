@@ -16,9 +16,9 @@ async def bumpcheck(overseer):
     return
 
   bump_channel = overseer.get_channel(1218867028304072755)
-  if not bump_channel: 
+  if not bump_channel:
     print("bumpcheck() : channel object is not valid!")
-    return 
+    return
 
   latest_bump = None
   async for message in bump_channel.history(limit=200):
@@ -28,16 +28,16 @@ async def bumpcheck(overseer):
 
     interaction = message.interaction
     if not interaction:
-      continue 
-        
+      continue
+
     if interaction.name == "bump" and message.author.id == 302050872383242240:
-      latest_bump = message      
+      latest_bump = message
       break
-    
-  if not latest_bump: 
+
+  if not latest_bump:
     print("bumpcheck() : failed to retrieve latest needed bump message!")
-    return 
-  
+    return
+
   print(f"bumpcheck() : successfully retrieved latest needed bump message. It was created at: '{message.created_at}'.")
 
   now = datetime.datetime.now(datetime.timezone.utc)
@@ -54,7 +54,7 @@ def getToken():
   print("getToken() : trying to get token from command line arguments...")
   parser = argparse.ArgumentParser("SpaRcle Overseer")
   parser.add_argument("-token", help="Provide the token for the bot.", type=str, required=False, default="UNDEFINED")
-  args = parser.parse_args() 
+  args = parser.parse_args()
   if args.token != "UNDEFINED":
     print("getToken() : token is successfully retrieved.")
     return args.token
@@ -62,10 +62,10 @@ def getToken():
   token = os.getenv('OVERSEERTOKEN', "UNDEFINED")
   if token == "UNDEFINED":
     print("getToken() : failed to retrieve the token. Exiting the application.")
-    exit()  
+    exit()
   else:
     print("getToken() : token is retrieved successfully.")
-    return token 
+    return token
 
 print("Welcome to SpaRcle Overseer.")
 print("Trying to get the token from environment variables...")
@@ -87,6 +87,9 @@ async def bumpstat(interaction):
 
 @overseer.event
 async def on_message(message):
+  if not message.interaction:
+    return
+
   if message.interaction.name == "bump" and message.author.id == '302050872383242240':
     with sqlite3.Connection("overseerBumps.db") as connection:
       cursor = connection.cursor()
