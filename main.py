@@ -84,7 +84,7 @@ async def bumpstat(interaction):
     cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
     connection.commit()
     print(f"bumpstat() searching for user with id: '{interaction.user.id}'.")
-    cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{interaction.user.id}'")
+    cursor.execute("SELECT * FROM BumpCount WHERE userId = ?", str(interaction.user.id))
     row = cursor.fetchone()
     if row is None:
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
@@ -104,7 +104,7 @@ async def on_message(message):
       cursor = connection.cursor()
       cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
       connection.commit()
-      cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{message.interaction.user.id}'")
+      cursor.execute("SELECT * FROM BumpCount WHERE userId = ?", str(message.interaction.user.id))
       row = cursor.fetchone()
       if row is None:
         print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
@@ -113,10 +113,9 @@ async def on_message(message):
         cursor.execute(sql, data)
       else:
         print(f"bumpcheck() : the user '{row[0]}' is in DB with '{row[1]}' bumps.")
-        cursor.execute(f"UPDATE BumpCount SET count = count + 1 WHERE userId = '{row[0]}'")
-        cursor.execute(f"UPDATE BumpCount SET messageId = '{message.interaction.user.id}' WHERE userId = '{row[0]}'")
+        cursor.execute("UPDATE BumpCount SET count = count + 1 WHERE userId = ?", str(nessage.interaction.user.id))
 
-    connection.commit()
+      connection.commit()
 
 @overseer.event
 async def on_ready():
