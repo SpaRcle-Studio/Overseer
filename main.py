@@ -78,10 +78,12 @@ tree = app_commands.CommandTree(overseer)
 async def bumpstat(interaction):
   BASE_DIR = os.path.dirname(os.path.abspath(__file__))
   db_path = os.path.join(BASE_DIR, "overseerBumps.db")
+  print(f"bumpstat() : trying to open connection. Path: '{db_path}'.")
   with sqlite3.Connection(db_path) as connection:
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
     connection.commit()
+    print(f"bumpstat() searching for user with id: '{interaction.user.id}'.")
     cursor.execute(f"SELECT * FROM BumpCount WHERE userId = '{interaction.user.id}'")
     row = cursor.fetchone()
     if row is None:
@@ -97,6 +99,7 @@ async def on_message(message):
   if message.interaction.name == "bump" and message.author.id == '302050872383242240':
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, "overseerBumps.db")
+    print(f"on_message() : trying to open connection. Path: '{db_path}'.")
     with sqlite3.Connection(db_path) as connection:
       cursor = connection.cursor()
       cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
@@ -105,7 +108,7 @@ async def on_message(message):
       row = cursor.fetchone()
       if row is None:
         print(f"bumpcheck() : the user is not in the DB yet, adding '{str(message.interaction.user.id)}'.")
-        sql = f"INSERT INTO BumpCount(userId, messageId, count) VALUES (?, ?)"
+        sql = f"INSERT INTO BumpCount(userId, count) VALUES (?, ?)"
         data = (str(message.interaction.user.id), 1)
         cursor.execute(sql, data)
       else:
