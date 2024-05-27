@@ -112,6 +112,8 @@ async def leaderboard(interaction):
     message = "```\nLeaderboard.\n\n"
     rows.reverse()
     for row in rows:
+       if i == 11:
+         break
        username = str(row[0])
        user = await overseer.fetch_user(row[0])
        if user:
