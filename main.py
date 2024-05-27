@@ -6,6 +6,7 @@ import datetime
 import discord
 from discord.ext import tasks, commands
 from discord import app_commands
+from discord.utils import get
 
 @tasks.loop(minutes = 5)
 async def bumpcheck(overseer):
@@ -91,6 +92,34 @@ async def bumpstat(interaction):
       await interaction.response.send_message("You have never /bump'ed the server yet. Good luck next time!")
     else:
       await interaction.response.send_message(f"```You have /bump'ed the server '{row[1]}' times!```")
+
+@tree.command(name="leaderboard", description="Leaderboard of server's /bump'ers.", guild=discord.Object(id=768652124204433429))
+async def leaderboard(interaction):
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  db_path = os.path.join(BASE_DIR, "overseerBumps.db")
+  print(f"bumpstat() : trying to open connection. Path: '{db_path}'.")
+  with sqlite3.Connection(db_path) as connection: 
+    cursor = connection.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
+    connection.commit()
+    cursor.execute("SELECT * FROM BumpCount ORDER BY count")
+    rows = cursor.fetchall()
+    i = 1
+    if rows is None:
+      await interaction.response.send_message("No one has ever bumped the server. :(")
+      return
+
+    message = "```\nLeaderboard.\n\n"
+    rows.reverse()
+    for row in rows:
+       username = str(row[0])
+       user = await overseer.fetch_user(row[0])
+       if user:
+         username = user.name
+       message += f"{i}. {username} - {row[1]}.\n"
+       i += 1
+    message += "```"
+    await interaction.response.send_message(message)
 
 @overseer.event
 async def on_message(message):
