@@ -98,6 +98,7 @@ async def leaderboard(interaction):
   BASE_DIR = os.path.dirname(os.path.abspath(__file__))
   db_path = os.path.join(BASE_DIR, "overseerBumps.db")
   print(f"bumpstat() : trying to open connection. Path: '{db_path}'.")
+  total = 0
   with sqlite3.Connection(db_path) as connection: 
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
@@ -118,8 +119,10 @@ async def leaderboard(interaction):
        user = await overseer.fetch_user(row[0])
        if user:
          username = user.name
+       total += row[1]
        message += f"{i}. {username} - {row[1]}.\n"
        i += 1
+    message += f"\n The server was being bump'ed during over '{total}' hours!"
     message += "```"
     await interaction.response.send_message(message)
 
