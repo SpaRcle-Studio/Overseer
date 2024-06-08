@@ -122,7 +122,7 @@ async def leaderboard(interaction):
        total += row[1]
        message += f"{i}. {username} - {row[1]}.\n"
        i += 1
-    message += f"\n The server was being bump'ed during over '{total}' hours!"
+    message += f"\nThe server was being bump'ed during over '{total}' hours!"
     message += "```"
     await interaction.response.send_message(message)
 
