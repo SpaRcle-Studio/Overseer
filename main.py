@@ -205,6 +205,47 @@ async def bumpstat(interaction):
                 f"```You have /bump'ed the server '{row[1]}' times!```"
             )
 
+class SetBumpStatModal(discord.ui.Modal, title="Set user"):
+    user_id = discord.ui.TextInput(
+        label="Enter the user ID",
+        placeholder="e.g., 1010130664269566064",
+        required=True,
+    )
+
+    bump_value = discord.ui.TextInput(
+        label="Enter the value",
+        placeholder="e.g., 123",
+        required=True,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "overseerBumps.db")
+        print(f"bumpstat() : trying to open connection. Path: '{db_path}'.")
+        with sqlite3.Connection(db_path) as connection:
+            cursor = connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS BumpCount (userId TEXT UNIQUE, count INTEGER)")
+            connection.commit()
+            sql = "INSERT INTO BumpCount(userId, count) VALUES (?, ?) ON CONFLICT(userId) DO UPDATE SET count=excluded.count"
+            data = (self.user_id.value, self.bump_value.value)
+            cursor.execute(sql, data)
+        await interaction.response.send_message(
+            f"Set bump stat for user `{self.user_id.value}` to `{self.bump_value.value}`",
+            ephemeral=True
+        )
+
+
+@tree.command(
+    name="setbumpstat",
+    description="Set user's bump stat.",
+    guild=discord.Object(id=768652124204433429),
+)
+async def setbumpstat(interaction):
+    if interaction.user.id != 1010130664269566064:
+        await interaction.response.send_message(content=f"This dude '{interaction.user.display_name}' tried to use /setbumpstat...\n\nOnly the God (innerviewer) is allowed to use this command!")
+        return
+
+    await interaction.response.send_modal(SetBumpStatModal())
 
 @tree.command(
     name="leaderboard",
