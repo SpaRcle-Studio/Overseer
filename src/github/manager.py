@@ -48,7 +48,7 @@ class GithubManager:
         branches = repo.get_branches()
 
         result.extend(branches)
-        result.sort(key=lambda x: x.updated_at)
+        result.sort(key=lambda x: x.commit.commit.timestamp, reverse=True)
 
         return result[:count]
 

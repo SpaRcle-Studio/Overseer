@@ -36,6 +36,9 @@ class OverseerDiscord(commands.Bot):
         #self.initial_extensions = ["src.discord.control_panel"]
         self.initial_extensions = []
 
+    def __del__(self):
+        print("OverseerDiscord : exiting.")
+
     async def setup_hook(self):
         for ext in self.initial_extensions:
             await self.load_extension(ext)
@@ -50,7 +53,7 @@ class OverseerDiscord(commands.Bot):
     async def shutdown(self):
         await super().close()
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if not message.interaction:
             print("on_message() : message is not an interaction.")
             return

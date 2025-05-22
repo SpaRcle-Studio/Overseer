@@ -17,7 +17,6 @@ class ControlPanel(discord.ui.View):
 
         self.bot = bot
         self.github_manager = github_manager
-        self.trigger_ci_view = None
 
     async def initialize(self):
         control_channel = self.bot.get_channel(CONTROL_PANEL_CHANNEL_ID)
@@ -48,8 +47,11 @@ class ControlPanel(discord.ui.View):
         if not await self.is_authorized(interaction):
             return
 
-        self.trigger_ci_view = TriggerCIView(self, self.control_message)
-        await self.trigger_ci_view.process()
+
+        #await interaction.response.defer(thinking=True, ephemeral=True)
+        ci_view = TriggerCIView(self)
+        await ci_view.process(interaction)
+
 
     @staticmethod
     async def is_authorized(interaction: discord.Interaction):
@@ -94,89 +96,105 @@ class GeneralControlButton(discord.ui.Button):
 
 
 class TriggerCIView(discord.ui.View):
-    def __init__(self, control_panel: ControlPanel, message: discord.Message):
+    def __init__(self, control_panel: ControlPanel):
         super().__init__(timeout=None)
         self.control_panel = control_panel
-        self.message = message
 
         self.repo = None
         self.branch = None
         self.workflow_file = None
+        self.active = True
+
+    def is_active(self) -> bool:
+        return self.active
 
     def remove_buttons(self):
         for item in self.children:
             if isinstance(item, discord.ui.Button):
                 if not item.custom_id in ["def-custom", "def-back"]:
-                    item.disabled = True
+                    self.remove_item(item)
 
-    async def process(self):
+    async def process(self, interaction: discord.Interaction):
+        self.active = False
+
+        if not interaction:
+            print("TriggerCIView::process() : interaction is None.")
+            return False
+
+        if not interaction.response.is_done():
+            await interaction.response.send_message("```Welcome to CI dashboard.```", ephemeral=True)
+
         if self.repo is None:
             print("TriggerCIView::process() : repo stage.")
             self.remove_buttons()
 
-            await self.message.edit(content="```Choose a repository to trigger CI:```", view=self)
             repos = self.control_panel.github_manager.get_active_repos(GITHUB_USER)
             if not repos:
-                await self.message.edit(content="No active repositories found.", view=self)
-                return
+                await interaction.followup.send(content="No active repositories found.", view=self, ephemeral=True)
+                return False
 
             for repo in repos:
-                async def repo_callback(interaction, repo_name=repo.name, view: TriggerCIView = self):
+                async def repo_callback(interaction: discord.Interaction, repo_name=repo.name, view: TriggerCIView = self):
                     view.repo = repo_name
-                    await view.process()
+                    await view.process(interaction)
 
                 button = GeneralControlButton(repo.name, repo_callback)
                 self.add_item(button)
 
-        await self.message.edit(content="```Choose a branch to trigger CI:```", view=self)
+            await interaction.edit_original_response(content="```Choose a repository to trigger CI:```", view=self)
 
         if self.repo and self.branch is None:
             print("TriggerCIView::process() : branch stage.")
             self.remove_buttons()
 
-            await self.message.edit(content="```Choose a branch to trigger CI:```", view=self)
             branches = self.control_panel.github_manager.get_active_branches(GITHUB_USER, self.repo)
             if not branches:
-                await self.message.edit(content="No branches found.", view=self)
-                return
+                await interaction.followup.send(content="No branches found.", view=self)
+                return False
 
             for branch in branches:
                 async def branch_callback(interaction, branch_name=branch.name, view: TriggerCIView = self):
                     view.branch = branch_name
-                    await view.process()
+                    await view.process(interaction)
 
                 button = GeneralControlButton(branch.name, branch_callback)
                 self.add_item(button)
+
+            await interaction.edit_original_response(content="```Choose a branch to trigger CI:```", view=self)
+
 
         if self.repo and self.branch:
             print("TriggerCIView::process() : workflow stage.")
             self.remove_buttons()
 
-            await self.message.edit(content="```Choose a workflow to trigger CI:```", view=self)
             workflows = self.control_panel.github_manager.get_triggerable_workflows(GITHUB_USER, self.repo)
             if not workflows:
-                await self.message.edit(content="No workflows found.", view=self)
+                await interaction.followup.send(content="No workflows found.", view=self)
                 return
 
             for workflow in workflows:
                 async def workflow_callback(interaction, workflow_name=workflow.name, view: TriggerCIView = self):
                     view.workflow_file = workflow_name
-                    await view.process()
+                    await view.process(interaction)
 
                 button = WorkflowButton(self.repo, self.branch, workflow.name, self.control_panel.github_manager)
                 self.add_item(button)
 
+            await interaction.edit_original_response(content="```Choose a workflow to trigger CI:```", view=self)
 
+        self.active = True
 
     @discord.ui.button(label="Custom", style=discord.ButtonStyle.secondary, custom_id="def-custom")
     async def custom_branch(self, interaction: discord.Interaction, button: discord.ui.Button):
-        def modal_callback(value, view=self):
+        async def modal_callback(value, view=self):
             if not view.repo:
                 view.repo = value
             elif not view.branch:
                 view.branch = value
             elif not view.workflow_file:
                 view.workflow_file = value
+
+            await self.process(interaction)
 
         await interaction.response.send_modal(Modal(modal_callback))
 
@@ -188,9 +206,12 @@ class TriggerCIView(discord.ui.View):
             self.branch = None
         elif self.repo:
             self.repo = None
+        else:
+            self.active = False
 
-        print("Back button pressed")
-        await self.process()
+        print("TriggerCIVIew::back() : back button pressed.")
+        await self.process(interaction)
+
 
 class Modal(discord.ui.Modal, title="Enter the custom value!"):
     user_input = discord.ui.TextInput(
